@@ -303,21 +303,6 @@ def remover_preco(request, preco_id):
     messages.success(request, "Serviço removido com sucesso!")
     return redirect("home")
 
-# Finalizar corte
-def finalizar_corte(request, agendamento_id):
-    agendamento = get_object_or_404(Agendamento, id=agendamento_id)
-
-    if not agendamento.realizado:  # evita marcar duas vezes
-        agendamento.realizado = True
-        agendamento.save()
-        messages.success(
-            request,
-            f"Corte de {agendamento.cliente.nome} finalizado! Valor de R$ {agendamento.valor} adicionado ao faturamento."
-        )
-    else:
-        messages.info(request, f"O corte de {agendamento.cliente.nome} já havia sido finalizado.")
-
-    return redirect("home")
 
 @login_required(login_url="login")
 def editar_barbearia(request, barbearia_id):
@@ -331,3 +316,4 @@ def editar_barbearia(request, barbearia_id):
         messages.success(request, "Barbearia atualizada com sucesso!")
         return redirect("home")
     return redirect("home")
+
