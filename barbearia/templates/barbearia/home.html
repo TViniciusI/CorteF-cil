@@ -1,0 +1,600 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - CorteFácil</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <img src="{% static 'img/CorteFácil.png' %}" alt="CorteFácil" width="150">
+
+  <style>
+    body {
+      background: #f2f5fa;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    header {
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      color: white;
+      padding: 25px 15px;
+      text-align: center;
+      border-radius: 0 0 30px 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    header img {
+      max-width: 80px;
+      margin-bottom: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    header h2 { font-weight: 700; }
+    header p { margin: 0; }
+
+    .metric-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: 0.2s;
+      position: relative;
+      cursor: pointer;
+    }
+    .metric-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0px 6px 16px rgba(0,0,0,0.15);
+    }
+    .metric-value {
+      font-size: 1.9rem;
+      font-weight: bold;
+      color: #4f46e5;
+      line-height: 1.1;
+    }
+    .metric-label { font-size: 1rem; color: #6b7280; }
+    .history-card {
+      border-radius: 14px;
+      border: none;
+      padding: 15px;
+      margin-bottom: 12px;
+      background: white;
+      box-shadow: 0px 3px 10px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .history-card:hover {
+      box-shadow: 0px 6px 16px rgba(0,0,0,0.15);
+      transform: translateY(-3px);
+    }
+    .btn-icon {
+      border: none;
+      background: white;
+      border-radius: 999px;
+      width: 34px; height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    }
+    .btn-icon i { font-size: 1.1rem; }
+    .card-header .btn { border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header com identificação -->
+  <header>
+    <img src="{% static 'img/logo.png' %}" alt="CorteFácil Logo">
+    <h2>📊 Dashboard</h2>
+    <p class="mt-2">
+      Barbearia: <strong>{{ barbearia.nome }}</strong> &nbsp;•&nbsp;
+      Usuário: <strong>{{ request.user.username }}</strong>
+      <!-- Botão para abrir modal de edição da barbearia -->
+      <button class="btn btn-sm btn-light ms-2" data-bs-toggle="modal" data-bs-target="#editarBarbeariaModal">
+        <i class="bi bi-pencil-square"></i> Editar
+      </button>
+    </p>
+  </header>
+
+  <main class="container mt-4">
+    <!-- Métricas (clicáveis) -->
+    <div class="row g-3">
+      <!-- Agendamentos -->
+      <div class="col-6 col-md-3">
+        <div class="metric-card">
+          <div class="metric-value">{{ total_agendamentos_mes|default:"0" }}</div>
+          <div class="metric-label">Agendamentos</div>
+          <a class="stretched-link" data-bs-toggle="collapse" href="#collapseAgendamentos" role="button" aria-expanded="false" aria-controls="collapseAgendamentos"></a>
+        </div>
+      </div>
+
+      <!-- Cortes feitos -->
+      <div class="col-6 col-md-3">
+        <div class="metric-card">
+          <div class="metric-value">{{ total_cortes|default:"0" }}</div>
+          <div class="metric-label">Cortes feitos</div>
+          <a class="stretched-link" data-bs-toggle="collapse" href="#collapseCortes" role="button" aria-expanded="false" aria-controls="collapseCortes"></a>
+        </div>
+      </div>
+
+      <!-- Faturamento -->
+      <div class="col-6 col-md-3">
+        <div class="metric-card">
+          <div class="metric-value">R$ {{ faturamento_mes|default:"0" }}</div>
+          <div class="metric-label">Faturamento (mês)</div>
+          <small class="d-block">Semana: R$ {{ faturamento_semana|default:"0" }}</small>
+          <small class="d-block">Hoje: R$ {{ faturamento_dia|default:"0" }}</small>
+          <a class="stretched-link" data-bs-toggle="collapse" href="#collapseFaturamento" role="button" aria-expanded="false" aria-controls="collapseFaturamento"></a>
+        </div>
+      </div>
+
+      <!-- Clientes -->
+      <div class="col-6 col-md-3">
+        <div class="metric-card">
+          <div class="metric-value">{{ clientes_mes|default:"0" }}</div>
+          <div class="metric-label">Clientes</div>
+          <a class="stretched-link" data-bs-toggle="collapse" href="#collapseClientes" role="button" aria-expanded="false" aria-controls="collapseClientes"></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTÓRICOS EXPANSÍVEIS (restaurados) -->
+    <div class="mt-4">
+
+      <!-- Histórico de Agendamentos -->
+      <div id="collapseAgendamentos" class="collapse mt-2">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <i class="bi bi-calendar2-week"></i> Histórico de Agendamentos
+          </div>
+          <div class="card-body">
+            {% if agendamentos %}
+              <div class="row">
+                {% for ag in agendamentos %}
+                  <div class="col-12 col-md-6 col-lg-4">
+                    <div class="history-card">
+                      <div class="d-flex justify-content-between">
+                        <strong>{{ ag.cliente.nome }}</strong>
+                        {% if ag.realizado %}
+                          <span class="badge bg-success">Realizado</span>
+                        {% else %}
+                          <span class="badge bg-secondary">Pendente</span>
+                        {% endif %}
+                      </div>
+                      <div class="small">Serviço: {{ ag.servico }}</div>
+                      <div class="small">Data: {{ ag.data_hora|date:"d/m/Y H:i" }}</div>
+                      <div class="small">Barbeiro: {{ ag.barbeiro }}</div>
+                      <div class="small">Valor: R$ {{ ag.valor }}</div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-info mb-0">Nenhum agendamento encontrado.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico de Cortes -->
+      <div id="collapseCortes" class="collapse mt-2">
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <i class="bi bi-scissors"></i> Cortes Realizados
+          </div>
+          <div class="card-body">
+            {% if agendamentos %}
+              <div class="row">
+                {% for ag in agendamentos %}
+                  {% if ag.realizado %}
+                    <div class="col-12 col-md-6 col-lg-4">
+                      <div class="history-card">
+                        <strong>{{ ag.cliente.nome }}</strong>
+                        <div class="small">Serviço: {{ ag.servico }}</div>
+                        <div class="small">Data: {{ ag.data_hora|date:"d/m/Y H:i" }}</div>
+                        <div class="small">Barbeiro: {{ ag.barbeiro }}</div>
+                        <div class="small">Valor: R$ {{ ag.valor }}</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-info mb-0">Nenhum corte realizado até agora.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico de Faturamento -->
+      <div id="collapseFaturamento" class="collapse mt-2">
+        <div class="card shadow-sm">
+          <div class="card-header bg-warning">
+            <i class="bi bi-wallet2"></i> Histórico de Faturamento
+          </div>
+          <div class="card-body">
+            {% if agendamentos %}
+              <div class="row">
+                {% for ag in agendamentos %}
+                  {% if ag.realizado %}
+                    <div class="col-12 col-md-6 col-lg-4">
+                      <div class="history-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div>
+                            <strong>{{ ag.cliente.nome }}</strong>
+                            <div class="small">Serviço: {{ ag.servico }}</div>
+                            <div class="small">Data: {{ ag.data_hora|date:"d/m/Y H:i" }}</div>
+                            <div class="small">Barbeiro: {{ ag.barbeiro }}</div>
+                          </div>
+                          <div class="fw-bold">R$ {{ ag.valor }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <div class="mt-2 fw-bold">Total recebido no mês: R$ {{ faturamento_mes|default:"0" }}</div>
+              <div class="text-muted small">Semana: R$ {{ faturamento_semana|default:"0" }} • Hoje: R$ {{ faturamento_dia|default:"0" }}</div>
+            {% else %}
+              <div class="alert alert-info mb-0">Nenhum faturamento registrado.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico de Clientes -->
+      <div id="collapseClientes" class="collapse mt-2">
+        <div class="card shadow-sm">
+          <div class="card-header bg-info text-white">
+            <i class="bi bi-people-fill"></i> Clientes
+          </div>
+          <div class="card-body">
+            {% if clientes %}
+              <div class="row">
+                {% for c in clientes %}
+                  <div class="col-12 col-md-6 col-lg-4">
+                    <div class="history-card">
+                      <strong>{{ c.nome }}</strong>
+                      <div class="small">Telefone: {{ c.telefone }}</div>
+                      <div class="small">Cadastrado em: {{ c.data_criacao|date:"d/m/Y" }}</div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="alert alert-info mb-0">Nenhum cliente cadastrado.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Painéis de Gestão -->
+    <div class="row g-4 mt-4">
+
+
+      
+<!-- Agenda -->
+<div class="col-12 col-md-4">
+  <div class="card shadow-sm h-100">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-calendar-event"></i> Agenda</span>
+      <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#novoAgendamentoModal">
+        <i class="bi bi-plus"></i>
+      </button>
+    </div>
+    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+      {% if agendamentos %}
+        {% for ag in agendamentos %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div class="flex-fill pe-2">
+              <!-- Nome do cliente -->
+              <strong>
+                {% if ag.cliente %}
+                  {{ ag.cliente.nome }}
+                {% else %}
+                  {{ ag.nome_avulso }}
+                {% endif %}
+              </strong><br>
+              <small>
+                {{ ag.servico }}<br>
+                🕒 {{ ag.data_hora|date:"d/m/Y H:i" }}<br>
+                ✂️ Barbeiro: {{ ag.barbeiro }}<br>
+                💰 R$ {{ ag.valor }}
+              </small>
+            </div>
+            <div class="d-flex gap-2">
+              {# Se o agendamento ainda não foi finalizado, exibe botão para finalizar corte #}
+              {% if not ag.realizado %}
+                <a href="{% url 'finalizar_corte' ag.id %}"
+                   class="btn-icon"
+                   data-bs-toggle="tooltip"
+                   title="Finalizar Corte">
+                  <i class="bi bi-check-circle text-success"></i>
+                </a>
+              {% else %}
+                <!-- Ícone de corte finalizado -->
+                <i class="bi bi-check2-circle text-success fs-4" data-bs-toggle="tooltip" title="Corte finalizado"></i>
+              {% endif %}
+
+              <!-- Botão abrir modal de edição do agendamento -->
+              <button class="btn-icon"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editarAgendamentoModal{{ ag.id }}"
+                      title="Editar">
+                <i class="bi bi-pencil-square text-primary"></i>
+              </button>
+
+              <!-- Modal de edição do agendamento -->
+              <div class="modal fade" id="editarAgendamentoModal{{ ag.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content p-3">
+                    <div class="modal-header">
+                      <h5 class="modal-title">✏️ Editar Agendamento</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{% url 'editar_agendamento' ag.id %}">
+                        {% csrf_token %}
+                        <input type="text" class="form-control mb-2" name="servico" value="{{ ag.servico }}" required>
+                        <input type="datetime-local" class="form-control mb-2" name="data_hora" value="{{ ag.data_hora|date:'Y-m-d\\TH:i' }}" required>
+                        <input type="number" step="0.01" class="form-control mb-2" name="valor" value="{{ ag.valor }}" required>
+                        {% if barbeiros_list %}
+                          <!-- Lista de barbeiros: seleciona o barbeiro atual se houver -->
+                          <select class="form-select mb-2" name="barbeiro" required>
+                            <option value="">Selecione o barbeiro</option>
+                            {% for b in barbeiros_list %}
+                              <option value="{{ b }}" {% if ag.barbeiro == b %}selected{% endif %}>{{ b }}</option>
+                            {% endfor %}
+                          </select>
+                        {% endif %}
+                        <div class="d-grid">
+                          <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botão remover agendamento -->
+              <a href="{% url 'remover_agendamento' ag.id %}"
+                 class="btn-icon"
+                 data-bs-toggle="tooltip"
+                 title="Remover"
+                 onclick="return confirm('Tem certeza que deseja remover este agendamento?')">
+                <i class="bi bi-trash text-danger"></i>
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-info mb-0">Nenhum agendamento encontrado.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+      <!-- Clientes -->
+      <div class="col-12 col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-people-fill"></i> Clientes</span>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#novoClienteModal">
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+          <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% if clientes %}
+              {% for c in clientes %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                  <div class="flex-fill pe-2">
+                    <strong>{{ c.nome }}</strong><br>
+                    <small>{{ c.telefone }}</small>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <!-- Link para editar cliente -->
+                    <a href="{% url 'editar_cliente' c.id %}"
+                       class="btn-icon"
+                       data-bs-toggle="tooltip"
+                       title="Editar">
+                      <i class="bi bi-pencil-square text-primary"></i>
+                    </a>
+                    <!-- Link para remover cliente -->
+                    <a href="{% url 'remover_cliente' c.id %}"
+                       class="btn-icon"
+                       data-bs-toggle="tooltip"
+                       title="Remover"
+                       onclick="return confirm('Tem certeza que deseja remover este cliente?')">
+                      <i class="bi bi-trash text-danger"></i>
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="alert alert-info mb-0">Nenhum cliente encontrado.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Serviços & Preços -->
+      <div class="col-12 col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-cash-stack"></i> Serviços & Preços</span>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#novoPrecoModal">
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+          <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% if precos %}
+              {% for p in precos %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                  <div class="flex-fill pe-2">
+                    <strong>{{ p.servico }}</strong><br>
+                    <small>💰 R$ {{ p.valor }}</small>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <!-- Botão abrir modal de edição de serviço/preço -->
+                    <button class="btn-icon"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editarPrecoModal{{ p.id }}"
+                            title="Editar">
+                      <i class="bi bi-pencil-square text-primary"></i>
+                    </button>
+                    <!-- Modal de edição de serviço/preço -->
+                    <div class="modal fade" id="editarPrecoModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content p-3">
+                          <div class="modal-header">
+                            <h5 class="modal-title">✏️ Editar Serviço</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <div class="modal-body">
+                            <form method="post" action="{% url 'editar_preco' p.id %}">
+                              {% csrf_token %}
+                              <input type="text" class="form-control mb-2" name="servico" value="{{ p.servico }}" required>
+                              <input type="number" step="0.01" class="form-control mb-2" name="valor" value="{{ p.valor }}" required>
+                              <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Botão remover serviço/preço -->
+                    <a href="{% url 'remover_preco' p.id %}"
+                       class="btn-icon"
+                       data-bs-toggle="tooltip"
+                       title="Remover"
+                       onclick="return confirm('Tem certeza que deseja remover este serviço?')">
+                      <i class="bi bi-trash text-danger"></i>
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="alert alert-info mb-0">Nenhum serviço cadastrado.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modais -->
+    <!-- Novo Agendamento -->
+    <div class="modal fade" id="novoAgendamentoModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+          <div class="modal-header">
+            <h5 class="modal-title">📅 Novo Agendamento</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="{% url 'novo_agendamento' %}">
+              {% csrf_token %}
+              <input type="text" class="form-control mb-2" name="cliente" placeholder="Cliente" required>
+              <input type="text" class="form-control mb-2" name="servico" placeholder="Serviço" required>
+              <input type="datetime-local" class="form-control mb-2" name="data_hora" required>
+              <input type="number" step="0.01" class="form-control mb-2" name="valor" placeholder="Valor (R$)" required>
+              {# Se houver barbeiros cadastrados, exibe um seletor para escolher quem realizará o corte #}
+              {% if barbeiros_list %}
+                <select class="form-select mb-2" name="barbeiro" required>
+                  <option value="">Selecione o barbeiro</option>
+                  {% for b in barbeiros_list %}
+                    <option value="{{ b }}">{{ b }}</option>
+                  {% endfor %}
+                </select>
+              {% endif %}
+              <div class="d-grid"><button type="submit" class="btn btn-primary">Salvar</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Novo Cliente -->
+    <div class="modal fade" id="novoClienteModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+          <div class="modal-header">
+            <h5 class="modal-title">👤 Novo Cliente</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="{% url 'cadastrar_cliente' %}">
+              {% csrf_token %}
+              <input type="text" class="form-control mb-2" name="nome" placeholder="Nome" required>
+              <input type="tel" class="form-control mb-2" name="telefone" placeholder="Telefone">
+              <div class="d-grid"><button type="submit" class="btn btn-primary">Salvar</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Novo Preço -->
+    <div class="modal fade" id="novoPrecoModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+          <div class="modal-header">
+            <h5 class="modal-title">💰 Novo Serviço</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="{% url 'cadastrar_preco' %}">
+              {% csrf_token %}
+              <input type="text" class="form-control mb-2" name="servico" placeholder="Serviço" required>
+              <input type="number" step="0.01" class="form-control mb-2" name="valor" placeholder="Valor (R$)" required>
+              <div class="d-grid"><button type="submit" class="btn btn-primary">Salvar</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Editar Barbearia -->
+    <div class="modal fade" id="editarBarbeariaModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+          <div class="modal-header">
+            <h5 class="modal-title">✏️ Editar Barbearia</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="{% url 'editar_barbearia' barbearia.id %}">
+              {% csrf_token %}
+              <input type="text" class="form-control mb-2" name="nome" value="{{ barbearia.nome }}" required>
+              <input type="text" class="form-control mb-2" name="cnpj" value="{{ barbearia.cnpj }}" required>
+              <input type="text" class="form-control mb-2" name="responsavel" value="{{ barbearia.responsavel }}" required>
+              <input type="text" class="form-control mb-2" name="telefone" value="{{ barbearia.telefone }}" required>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bootstrap Bundle (JS + Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Inicializa tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+  </script>
+</body>
+</html>

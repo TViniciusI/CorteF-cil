@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastrar Barbearia - CorteFácil</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f2f5fa; font-family: 'Segoe UI', sans-serif; }
+    .card {
+      max-width: 600px; margin: 40px auto; padding: 25px;
+      border-radius: 16px; border: none; background: white;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    }
+    h3 { text-align: center; margin-bottom: 20px; font-weight: bold; color: #4f46e5; }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      border: none; font-weight: bold; border-radius: 10px; padding: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h3>✂️ Cadastre sua Barbearia</h3>
+
+    {% if messages %}
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" action="{% url 'cadastrar_barbearia' %}">
+      {% csrf_token %}
+
+      <!-- Dados da Barbearia -->
+      <div class="mb-3">
+        <label class="form-label">Nome da Barbearia</label>
+        <input type="text" class="form-control" name="nome" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">CNPJ</label>
+        <input type="text" class="form-control" name="cnpj" id="cnpj"
+               placeholder="00.000.000/0000-00" maxlength="18" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Responsável</label>
+        <input type="text" class="form-control" name="responsavel" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Telefone</label>
+        <input type="text" class="form-control" name="telefone" id="telefone"
+               placeholder="(00) 00000-0000" maxlength="15" required>
+      </div>
+
+      <hr>
+
+      <!-- Dados do Usuário -->
+      <h5 class="mb-3">🔑 Criar Usuário de Acesso</h5>
+      <div class="mb-3">
+        <label class="form-label">Usuário de Login</label>
+        <input type="text" class="form-control" name="username" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Senha</label>
+        <input type="password" class="form-control" name="password" required>
+      </div>
+
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">Cadastrar Barbearia</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function mascaraCNPJ(valor) {
+      return valor
+        .replace(/\D/g, '') 
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d)/, ".$1/$2")
+        .replace(/(\d{4})(\d)/, "$1-$2")
+        .slice(0, 18);
+    }
+
+    function mascaraTelefone(valor) {
+      return valor
+        .replace(/\D/g, '') 
+        .replace(/^(\d{2})(\d)/g, "($1) $2")
+        .replace(/(\d{5})(\d{4})$/, "$1-$2")
+        .slice(0, 15);
+    }
+
+    const cnpjInput = document.getElementById('cnpj');
+    const telefoneInput = document.getElementById('telefone');
+
+    cnpjInput.addEventListener('input', (e) => {
+      e.target.value = mascaraCNPJ(e.target.value);
+    });
+
+    telefoneInput.addEventListener('input', (e) => {
+      e.target.value = mascaraTelefone(e.target.value);
+    });
+  </script>
+</body>
+</html>
